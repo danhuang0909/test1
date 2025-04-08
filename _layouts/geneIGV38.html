@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TP53 - ntRNA</title>
+    
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+    <style>
+        :root {
+            --primary-blue: #3498db;
+            --dark-blue: #2c3e50;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #f8f9fa;
+        }
+
+        .gene-header {
+            background: linear-gradient(135deg, var(--dark-blue) 0%, var(--primary-blue) 100%);
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .equal-height-row {
+            flex: 1;
+            align-items: stretch;
+            min-height: 600px;
+        }
+
+        .data-table-wrapper {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .data-table-container {
+            flex: 1;
+            overflow: auto;
+            padding: 1rem;
+        }
+
+        .image-tabs-wrapper {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tab-content {
+            flex: 1;
+            min-height: 0; /* 关键属性 */
+        }
+
+        .tab-image {
+            height: 100%;
+            width: 100%;
+            object-fit: contain;
+            border-radius: 0 8px 8px 8px;
+            background: white;
+        }
+
+        #igv-container {
+            height: 500px;
+            margin-top: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* 统一表格样式 */
+        table.dataTable {
+            margin-top: 0 !important;
+            border-collapse: collapse !important;
+        }
+
+        table.dataTable thead th {
+            border-bottom: 2px solid var(--primary-blue) !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="error-alert" class="alert alert-danger"></div>
+
+    <header class="gene-header">
+        <div class="container">
+            <h1 class="display-4 mb-3">TP53</h1>
+            <p class="lead">Tumor protein p53</p>
+        </div>
+    </header>
+
+    <main class="container main-content">
+        <div class="row g-4 equal-height-row">
+            <!-- 左侧表格 -->
+            <div class="col-lg-6">
+                <div class="data-table-wrapper">
+                    <div class="p-3 border-bottom">
+                        <h4 class="mb-0">Genomic Features</h4>
+                    </div>
+                    <div class="data-table-container">
+                        <table id="data-table" class="table table-hover">
+                            <!-- 列头由JavaScript生成 -->
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧图片选项卡 -->
+            <div class="col-lg-6">
+                <div class="image-tabs-wrapper">
+                    <ul class="nav nav-pills mb-3 px-3 pt-3">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#figure1">
+                                Figure 1
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#figure2">
+                                Figure 2
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content h-100">
+                        <div class="tab-pane fade show active h-100" id="figure1">
+                            <img src="/assets/images/tp53.png" 
+                                 class="tab-image"
+                                 alt="Figure 1">
+                        </div>
+                        <div class="tab-pane fade h-100" id="figure2">
+                            <img src="/assets/images/tp53_1.png" 
+                                 class="tab-image"
+                                 alt="Figure 2">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- IGV浏览器 -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <h4 class="mb-3">Genome Browser</h4>
+                <div id="igv-container"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Required Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/igv@2.12.3/dist/igv.min.js"></script>
+
+    <script>
+        $(document).ready(async function() {
+            try {
+                // 加载表格数据
+                const response = await fetch('/bed/TP53.txt');
+                if (!response.ok) throw new Error('数据加载失败');
+                
+                const textData = await response.text();
+                const lines = textData.split('\n').filter(line => line.trim() !== '');
+                
+                // 提取列名（第一行）
+                const headers = lines[0].split('\t').map(header => ({
+                    title: header.trim(),
+                    data: header.toLowerCase().replace(/\s+/g, '_')
+                }));
+
+                // 准备表格数据（后续行）
+                const tableData = lines.slice(1).map(line => {
+                    const row = line.split('\t');
+                    const obj = {};
+                    headers.forEach((header, index) => {
+                        obj[header.data] = row[index]?.trim() || '';
+                    });
+                    return obj;
+                });
+
+                // 初始化DataTable
+                $('#data-table').DataTable({
+                    data: tableData,
+                    columns: headers,
+                    paging: true,
+                    pageLength: 10,
+                    scrollX: true,
+                    autoWidth: true,
+                    language: {
+                        search: "搜索：",
+                        lengthMenu: "显示 _MENU_ 条"
+                    },
+                    initComplete: function() {
+                        // 列宽调整
+                        this.api().columns.adjust();
+                    }
+                });
+
+                // 初始化IGV
+                await igv.createBrowser(document.getElementById("igv-container"), {
+                    genome: "hg38",
+                    locus: "chr17:7566000-7590000",
+                    tracks: [{
+                        type: "annotation",
+                        format: "bed",
+                        url: "/bed/tp53_exons.bed",
+                        displayMode: "EXPANDED",
+                        height: 200
+                    }]
+                });
+
+                // 动态调整布局
+                setTimeout(() => {
+                    $('.equal-height-row').css('min-height', $('.tab-content').outerHeight() + 'px');
+                }, 500);
+
+            } catch (error) {
+                console.error(error);
+                $('#error-alert').text(error.message).show();
+            }
+        });
+    </script>
+</body>
+</html>

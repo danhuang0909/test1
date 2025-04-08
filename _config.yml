@@ -1,0 +1,40 @@
+# Welcome to Jekyll!
+
+title: ntRNA
+email: danhuang2018dana@gmail.com
+description: >-
+  This is a database for ntRNA
+baseurl: "/test1"
+url: "https://danhuang0909.github.io"
+# Build settings
+theme: minima
+
+plugins:
+  - jekyll-feed
+  - jekyll-paginate
+collections:
+  genes:
+    output: true
+    permalink: /genes/:name/
+
+# 分页配置（需配合 _genes 目录）
+paginate: 100
+paginate_path: "/genes/page:num/"
+
+# 排除文件（保持默认即可）
+exclude:
+  - .sass-cache/
+  - .jekyll-cache/
+  - Gemfile
+  - Gemfile.lock
+  - node_modules/
+  - vendor/
+
+# 禁用所有缓存
+future: false
+show_drafts: false
+plugins: []
+
+# 强制重新生成所有页面
+force_polling: true
+incremental: false

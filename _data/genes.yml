@@ -1,0 +1,5 @@
+- name: "TP53"
+  description: "Tumor protein p53"
+  excel_path: "/bed/tp53.xlsx"  # Excel文件路径
+  image_path: "/assets/images/tp53.png"
+  bed_exons: "/bed/tp53_exons.bed"

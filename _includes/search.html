@@ -1,0 +1,65 @@
+<div class="gene-search">
+  <input type="text" 
+         id="geneSearch" 
+         placeholder="输入基因名称（如TP53）"
+         autocomplete="off">
+  <div id="searchResults"></div>
+</div>
+
+<script>
+// 加载基因数据
+const genes = [
+  {% for gene in site.data.genes %}
+  {
+    name: "{{ gene.name }}",
+    url: "{{ '/genes/' | relative_url }}{{ gene.name }}/"
+  },
+  {% endfor %}
+];
+
+// 搜索逻辑（带防抖）
+let searchTimeout;
+document.getElementById('geneSearch').addEventListener('input', function(e) {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    const query = e.target.value.trim().toUpperCase();
+    const results = genes.filter(g => 
+      g.name.toUpperCase().includes(query)
+    ).slice(0, 10); // 最多显示10条结果
+    
+    const resultsContainer = document.getElementById('searchResults');
+    resultsContainer.innerHTML = results.map(g => `
+      <div class="search-result" 
+           onclick="window.location.href='${g.url}'">
+        ${g.name}
+      </div>
+    `).join('');
+  }, 300);
+});
+</script>
+
+<style>
+.gene-search {
+  max-width: 600px;
+  margin: 2rem auto;
+}
+
+#geneSearch {
+  width: 100%;
+  padding: 0.8rem;
+  font-size: 1.1rem;
+  border: 2px solid #2c3e50;
+  border-radius: 4px;
+}
+
+.search-result {
+  padding: 0.8rem;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.search-result:hover {
+  background: #f8f9fa;
+}
+</style>
